@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import api from '../../api';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Star, MapPin } from 'lucide-react';
+import { Search, Star, MapPin, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import ScheduleModal from '../../components/ScheduleModal';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -11,6 +12,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [minRating, setMinRating] = useState(0);
+  const [selectedShopForSchedule, setSelectedShopForSchedule] = useState(null);
 
   useEffect(() => {
     fetchBarbershops();
@@ -42,11 +44,11 @@ export default function Dashboard() {
           </h1>
           <div className="flex items-center gap-4">
             <Link to="/reservasi/riwayat" className="text-slate-300 hover:text-white transition-colors">
-                My Reservations
+              My Reservations
             </Link>
             <div className="h-4 w-px bg-slate-700"></div>
             <span className="text-slate-300">Hi, {user?.name}</span>
-            <button 
+            <button
               onClick={logout}
               className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors"
             >
@@ -111,6 +113,26 @@ export default function Dashboard() {
                     <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
                     <span className="text-sm font-medium text-white">{Number(shop.rating_rata_rata).toFixed(1)}</span>
                   </div>
+                  {/* Status Badge */}
+                  {(() => {
+                    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+                    const schedule = shop.operating_hours?.find(h => h.day === today);
+                    // Default to closed if no schedule found, or explicitly closed
+                    const isOpen = schedule?.is_open;
+
+                    if (!isOpen) {
+                      return (
+                        <div className="absolute top-2 left-2 bg-red-600/90 backdrop-blur-sm px-2 py-1 rounded-md text-xs font-bold text-white uppercase tracking-wider">
+                          Closed Today
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="absolute top-2 left-2 bg-green-600/90 backdrop-blur-sm px-2 py-1 rounded-md text-xs font-bold text-white uppercase tracking-wider">
+                        Open Now
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="p-5">
                   <h3 className="text-xl font-bold text-white mb-2">{shop.nama}</h3>
@@ -119,27 +141,62 @@ export default function Dashboard() {
                     <p className="text-sm line-clamp-2">{shop.alamat}</p>
                   </div>
                   <div className="flex items-center justify-between mt-4">
-                    <div className="text-sm text-slate-500">
-                      {shop.jam_buka} - {shop.jam_tutup}
+                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                      {(() => {
+                        const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+                        const schedule = shop.operating_hours?.find(h => h.day === today);
+                        if (!schedule || !schedule.is_open) return 'Closed Today';
+                        return `${String(schedule.start_time).substring(0, 5)} - ${String(schedule.end_time).substring(0, 5)}`;
+                      })()}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedShopForSchedule(shop);
+                        }}
+                        className="p-1 text-slate-500 hover:text-blue-400 transition-colors"
+                      >
+                        <Info className="h-4 w-4" />
+                      </button>
                     </div>
-                    <Link 
-                      to={`/barbershop/${shop.id}`}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-                    >
-                      Book Now
-                    </Link>
+                    {(() => {
+                      const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+                      const isOpen = shop.operating_hours?.find(h => h.day === today)?.is_open;
+
+                      return isOpen ? (
+                        <Link
+                          to={`/barbershop/${shop.id}`}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                        >
+                          Book Now
+                        </Link>
+                      ) : (
+                        <button
+                          disabled
+                          className="px-4 py-2 bg-slate-700 text-slate-400 text-sm font-medium rounded-lg cursor-not-allowed"
+                        >
+                          Closed
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               </motion.div>
             ))}
             {barbershops.length === 0 && (
-                <div className="col-span-full text-center py-12 text-slate-500">
-                    No barbershops found matching your criteria.
-                </div>
+              <div className="col-span-full text-center py-12 text-slate-500">
+                No barbershops found matching your criteria.
+              </div>
             )}
           </div>
         )}
       </main>
+
+      <ScheduleModal
+        isOpen={!!selectedShopForSchedule}
+        onClose={() => setSelectedShopForSchedule(null)}
+        schedule={selectedShopForSchedule?.operating_hours}
+      />
     </div>
   );
 }

@@ -21,7 +21,7 @@ class BarbershopController extends Controller
             $query->where('rating_rata_rata', '>=', $request->min_rating);
         }
 
-        $barbershops = $query->with('user')->paginate(10);
+        $barbershops = $query->with(['user', 'operatingHours'])->paginate(10);
 
         return response()->json($barbershops);
     }
