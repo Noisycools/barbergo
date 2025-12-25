@@ -49,6 +49,17 @@ class BarbershopController extends Controller
                 'rating_rata_rata' => 0
             ]);
 
+            // Auto-generate Weekly Schedule
+            $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            foreach ($days as $day) {
+                $barbershop->operatingHours()->create([
+                    'day' => $day,
+                    'is_open' => true,
+                    'start_time' => $request->jam_buka,
+                    'end_time' => $request->jam_tutup,
+                ]);
+            }
+
             return response()->json(['message' => 'Barbershop created', 'data' => $barbershop], 201);
         });
     }
