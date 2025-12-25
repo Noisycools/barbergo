@@ -28,7 +28,7 @@ class BarbershopController extends Controller
 
     public function show($id)
     {
-        $barbershop = Barbershop::with(['layanans', 'tukangCukurs', 'promosis', 'user'])->findOrFail($id);
+        $barbershop = Barbershop::with(['layanans', 'tukangCukurs', 'promosis', 'user', 'operatingHours'])->findOrFail($id);
 
         return response()->json($barbershop);
     }

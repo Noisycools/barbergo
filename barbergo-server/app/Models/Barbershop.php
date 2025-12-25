@@ -41,4 +41,9 @@ class Barbershop extends Model
     {
         return $this->hasMany(Reservasi::class);
     }
+
+    public function operatingHours()
+    {
+        return $this->hasMany(BarbershopOperatingHour::class);
+    }
 }
