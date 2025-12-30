@@ -17,6 +17,7 @@ class DashboardController extends Controller
         // 1. Active Bookings: menunggu or dikonfirmasi
         $activeBookings = Reservasi::where('user_id', $user->id)
             ->whereIn('status', ['menunggu', 'dikonfirmasi'])
+            ->whereDate('tanggal', '>=', now()->toDateString())
             ->count();
 
         // 2. Reviews Given
