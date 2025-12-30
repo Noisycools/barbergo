@@ -5,6 +5,7 @@ import { Search, Star, MapPin, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import ScheduleModal from '../../components/ScheduleModal';
+import DashboardStats from '../../components/DashboardStats';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -13,10 +14,27 @@ export default function Dashboard() {
   const [search, setSearch] = useState('');
   const [minRating, setMinRating] = useState(0);
   const [selectedShopForSchedule, setSelectedShopForSchedule] = useState(null);
+  const [stats, setStats] = useState(null);
 
   useEffect(() => {
     fetchBarbershops();
   }, [search, minRating]);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get('/user/dashboard/stats');
+      setStats(data.data);
+    } catch (error) {
+      console.error('Failed to fetch dashboard stats', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchBarbershops = async () => {
     setLoading(true);
@@ -59,6 +77,9 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats */}
+        <DashboardStats stats={stats} />
+
         {/* Filters */}
         <div className="mb-8 space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
           <div className="relative flex-1">
@@ -103,7 +124,7 @@ export default function Dashboard() {
               >
                 <div className="h-40 bg-slate-700 relative overflow-hidden">
                   {shop.foto ? (
-                    <img src={shop.foto} alt={shop.nama} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <img src={'http://localhost:8000/storage/' + shop.foto} alt={shop.nama} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-slate-500 bg-slate-700">
                       No Image
