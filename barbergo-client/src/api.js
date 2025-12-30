@@ -78,9 +78,7 @@ export function createApi({
       // Ensure a JSON content type when not multipart and data exists
       if (config.data && !(config.data instanceof FormData)) {
         config.headers = config.headers || {};
-        if (!('Content-Type' in config.headers)) {
-          config.headers['Content-Type'] = 'application/json';
-        }
+        config.headers['Content-Type'] = 'application/json';
       }
     }
 

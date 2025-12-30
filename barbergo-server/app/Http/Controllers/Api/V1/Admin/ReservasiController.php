@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ReservasiController extends Controller
 {
@@ -41,6 +42,7 @@ class ReservasiController extends Controller
 
     public function update(Request $request, string $id)
     {
+        Log::debug($request->all());
         $barbershop = $request->user()->barbershop;
         if (!$barbershop) {
             return response()->json(['message' => 'Barbershop not found'], 404);

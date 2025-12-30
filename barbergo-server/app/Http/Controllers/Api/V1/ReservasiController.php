@@ -44,12 +44,12 @@ class ReservasiController extends Controller
 
         if ($waktuMulai->lt($startTime) || $waktuMulai->gte($endTime)) {
             return response()->json([
-                'message' => 'Reservation times outside operating hours. Opening hours: ' . 
-                            $operatingHour->start_time . ' - ' . $operatingHour->end_time
+                'message' => 'Reservation times outside operating hours. Opening hours: ' .
+                    $operatingHour->start_time . ' - ' . $operatingHour->end_time
             ], 422);
         }
 
-        
+
 
         $reservasi = Reservasi::create([
             'user_id' => $request->user()->id,
@@ -66,7 +66,7 @@ class ReservasiController extends Controller
 
     public function riwayat(Request $request)
     {
-        $reservasis = $request->user()->reservasis()->with(['barbershop', 'layanan'])->latest()->get();
+        $reservasis = $request->user()->reservasis()->with(['barbershop', 'layanan', 'ulasan'])->latest()->get();
         return response()->json($reservasis);
     }
 
