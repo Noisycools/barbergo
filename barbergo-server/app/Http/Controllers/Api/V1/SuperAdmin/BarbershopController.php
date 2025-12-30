@@ -9,6 +9,7 @@ use App\Models\Barbershop;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class BarbershopController extends Controller
 {
@@ -20,14 +21,16 @@ class BarbershopController extends Controller
 
     public function store(Request $request)
     {
+        // validate input including optional foto
         $request->validate([
             'nama' => 'required|string|max:255',
             'alamat' => 'required|string',
-            'jam_buka' => 'required',
-            'jam_tutup' => 'required',
+            'jam_buka' => 'required|date_format:H:i',
+            'jam_tutup' => 'required|date_format:H:i',
             'email' => 'required|email|unique:users,email', // Create user for shop
             'password' => 'required|min:6', // Create user password
-            'user_name' => 'required|string'
+            'user_name' => 'required|string',
+            'foto' => 'nullable|image|max:2048',
         ]);
 
         return DB::transaction(function () use ($request) {
@@ -39,15 +42,24 @@ class BarbershopController extends Controller
                 'role' => 'admin_barbershop'
             ]);
 
-            // Create Barbershop
-            $barbershop = Barbershop::create([
+            // Prepare Barbershop data
+            $barbershopData = [
                 'user_id' => $user->id,
                 'nama' => $request->nama,
                 'alamat' => $request->alamat,
                 'jam_buka' => $request->jam_buka,
                 'jam_tutup' => $request->jam_tutup,
-                'rating_rata_rata' => 0
-            ]);
+                'rating_rata_rata' => 0,
+            ];
+
+            // Handle optional foto upload and store on the public disk
+            if ($request->hasFile('foto')) {
+                $path = $request->file('foto')->store('barbershops', 'public');
+                $barbershopData['foto'] = $path;
+            }
+
+            // Create Barbershop
+            $barbershop = Barbershop::create($barbershopData);
 
             // Auto-generate Weekly Schedule
             $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];

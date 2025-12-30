@@ -103,7 +103,7 @@ export default function Dashboard() {
               >
                 <div className="h-40 bg-slate-700 relative overflow-hidden">
                   {shop.foto ? (
-                    <img src={shop.foto} alt={shop.nama} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <img src={'http://localhost:8000/storage/'+shop.foto} alt={shop.nama} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-slate-500 bg-slate-700">
                       No Image

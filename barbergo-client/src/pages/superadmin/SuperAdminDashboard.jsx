@@ -18,7 +18,9 @@ export default function SuperAdminDashboard() {
       jam_tutup: '21:00',
       user_name: '',
       email: '',
-      password: ''
+      password: '', 
+      foto: null,
+      nama_gambar:''
   });
 
   useEffect(() => {
@@ -43,9 +45,13 @@ export default function SuperAdminDashboard() {
     e.preventDefault();
     try {
         if (editId) {
-             await api.put(`/super-admin/barbershop/${editId}`, formData);
+             await api.put(`/super-admin/barbershop/${editId}`, formData, {
+                isMultipart: true
+             });
         } else {
-             await api.post('/super-admin/barbershop', formData);
+             await api.post('/super-admin/barbershop', formData, {
+                isMultipart: true
+             });
         }
         await fetchData();
         setShowModal(false);
@@ -196,6 +202,10 @@ export default function SuperAdminDashboard() {
                             <input type="time" className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2" required value={formData.jam_tutup} onChange={e => setFormData({...formData, jam_tutup: e.target.value})} />
                         </div>
                      </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-slate-400">Image</label>
+                            <input type="file" className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2" required onChange={e => setFormData({...formData, foto: e.target.files[0], nama_gambar: e.target.value})} accept='image/*'/>
+                        </div>
 
                      {!editId && (
                          <>

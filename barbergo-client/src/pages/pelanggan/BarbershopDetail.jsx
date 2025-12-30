@@ -34,7 +34,7 @@ export default function BarbershopDetail() {
       {/* Hero Image */}
       <div className="relative h-64 md:h-96 w-full">
         {barbershop.foto ? (
-          <img src={barbershop.foto} alt={barbershop.nama} className="w-full h-full object-cover" />
+          <img src={'http://localhost:8000/storage/'+barbershop.foto} alt={barbershop.nama} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-500 text-xl">
             No Image Available
