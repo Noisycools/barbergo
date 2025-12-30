@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BarbershopController;
 use App\Http\Controllers\Api\V1\ReservasiController;
 use App\Http\Controllers\Api\V1\PromosiController;
+use App\Http\Controllers\Api\V1\DashboardController;
 
 Route::prefix('v1')->group(function () {
     // Auth
@@ -21,6 +22,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/user/profile', [AuthController::class, 'user']);
+        Route::get('/user/dashboard/stats', [DashboardController::class, 'pelangganStats']);
 
         // Pelanggan Actions
         Route::post('/reservasi', [ReservasiController::class, 'store']);
