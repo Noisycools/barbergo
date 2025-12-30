@@ -24,6 +24,27 @@ export default function Dashboard() {
     fetchStats();
   }, []);
 
+  const isShopOpenNow = (shop) => {
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    const schedule = shop.operating_hours?.find(h => h.day === today);
+    if (!schedule || !schedule.is_open) return false;
+
+    const now = new Date();
+    const currentHours = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const nowTotalMinutes = currentHours * 60 + currentMinutes;
+
+    const startTime = String(schedule.start_time).substring(0, 5);
+    const [startH, startM] = startTime.split(':').map(Number);
+    const startTotalMinutes = startH * 60 + startM;
+
+    const endTime = String(schedule.end_time).substring(0, 5);
+    const [endH, endM] = endTime.split(':').map(Number);
+    const endTotalMinutes = endH * 60 + endM;
+
+    return nowTotalMinutes >= startTotalMinutes && nowTotalMinutes <= endTotalMinutes;
+  };
+
   const fetchStats = async () => {
     setLoading(true);
     try {
@@ -136,15 +157,11 @@ export default function Dashboard() {
                   </div>
                   {/* Status Badge */}
                   {(() => {
-                    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-                    const schedule = shop.operating_hours?.find(h => h.day === today);
-                    // Default to closed if no schedule found, or explicitly closed
-                    const isOpen = schedule?.is_open;
-
+                    const isOpen = isShopOpenNow(shop);
                     if (!isOpen) {
                       return (
                         <div className="absolute top-2 left-2 bg-red-600/90 backdrop-blur-sm px-2 py-1 rounded-md text-xs font-bold text-white uppercase tracking-wider">
-                          Closed Today
+                          Closed
                         </div>
                       );
                     }
@@ -167,7 +184,9 @@ export default function Dashboard() {
                         const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
                         const schedule = shop.operating_hours?.find(h => h.day === today);
                         if (!schedule || !schedule.is_open) return 'Closed Today';
-                        return `${String(schedule.start_time).substring(0, 5)} - ${String(schedule.end_time).substring(0, 5)}`;
+                        const timeStr = `${String(schedule.start_time).substring(0, 5)} - ${String(schedule.end_time).substring(0, 5)}`;
+                        const isOpen = isShopOpenNow(shop);
+                        return isOpen ? timeStr : `${timeStr} (Closed)`;
                       })()}
                       <button
                         onClick={(e) => {
@@ -181,8 +200,7 @@ export default function Dashboard() {
                       </button>
                     </div>
                     {(() => {
-                      const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-                      const isOpen = shop.operating_hours?.find(h => h.day === today)?.is_open;
+                      const isOpen = isShopOpenNow(shop);
 
                       return isOpen ? (
                         <Link
