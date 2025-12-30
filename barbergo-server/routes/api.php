@@ -39,6 +39,7 @@ Route::prefix('v1')->group(function () {
 
             Route::apiResource('layanan', \App\Http\Controllers\Api\V1\Admin\LayananController::class);
             Route::apiResource('tukang-cukur', \App\Http\Controllers\Api\V1\Admin\TukangCukurController::class);
+            Route::apiResource('reservasi', \App\Http\Controllers\Api\V1\Admin\ReservasiController::class);
         });
 
         // Super Admin Routes

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../api';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, Scissors, Users, Plus, Edit, Trash2, Save, X, Clock } from 'lucide-react';
+import { LayoutDashboard, Scissors, Users, Plus, Edit, Trash2, Save, X, Clock, Calendar, CheckCircle, XCircle, ChevronLeft, ChevronRight, Search, Filter, Banknote } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import OperatingHours from './components/OperatingHours';
 import toast from 'react-hot-toast';
@@ -12,7 +12,21 @@ export default function AdminDashboard() {
     const [shop, setShop] = useState(null);
     const [services, setServices] = useState([]);
     const [barbers, setBarbers] = useState([]);
+    const [reservations, setReservations] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    // Reservation Filters & Pagination
+    const [reservationFilters, setReservationFilters] = useState({
+        date: new Date().toISOString().split('T')[0],
+        status: 'all',
+        search: '',
+        page: 1
+    });
+    const [reservationMeta, setReservationMeta] = useState({
+        current_page: 1,
+        last_page: 1,
+        total: 0
+    });
 
     // Forms
     const [shopForm, setShopForm] = useState({});
@@ -22,6 +36,10 @@ export default function AdminDashboard() {
     const [showServiceModal, setShowServiceModal] = useState(false);
     const [showBarberModal, setShowBarberModal] = useState(false);
     const [editId, setEditId] = useState(null); // ID of item being edited (service/barber)
+
+    // Payment Modal State
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [paymentReservation, setPaymentReservation] = useState(null);
 
     useEffect(() => {
         fetchData();
@@ -45,6 +63,38 @@ export default function AdminDashboard() {
             setLoading(false);
         }
     };
+
+    const fetchReservations = async () => {
+        try {
+            const params = new URLSearchParams({
+                page: reservationFilters.page,
+                date: reservationFilters.date,
+                search: reservationFilters.search
+            });
+            
+            if (reservationFilters.status !== 'all') {
+                params.append('status', reservationFilters.status);
+            }
+
+            const { data } = await api.get(`/admin/reservasi?${params.toString()}`);
+            setReservations(data.data || []);
+            setReservationMeta({
+                current_page: data.current_page,
+                last_page: data.last_page,
+                total: data.total,
+                from: data.from,
+                to: data.to
+            });
+        } catch (error) {
+            console.error('Error fetching reservations', error);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'reservations') {
+            fetchReservations();
+        }
+    }, [reservationFilters, activeTab]);
 
     const updateShop = async (e) => {
         e.preventDefault();
@@ -147,6 +197,55 @@ export default function AdminDashboard() {
         ), { duration: 5000 });
     };
 
+    const updateReservationStatus = (id, status) => {
+        toast.promise(
+            api.put(`/admin/reservasi/${id}`, { status }).then(() => {
+                fetchReservations();
+            }),
+            {
+                loading: 'Updating status...',
+                success: `Reservation ${status}`,
+                error: 'Failed to update status'
+            }
+        );
+    };
+
+    const deleteReservation = (id) => {
+        if (!window.confirm('Delete this reservation?')) return;
+        toast.promise(
+            api.delete(`/admin/reservasi/${id}`).then(() => {
+                fetchReservations();
+            }),
+            {
+                loading: 'Deleting...',
+                success: 'Reservation deleted',
+                error: 'Failed to delete'
+            }
+        );
+    };
+
+    const handlePayment = (reservation) => {
+        setPaymentReservation(reservation);
+        setShowPaymentModal(true);
+    };
+
+    const confirmPayment = () => {
+        if (!paymentReservation) return;
+        
+        toast.promise(
+            api.put(`/admin/reservasi/${paymentReservation.id}`, { status: 'selesai' }).then(() => {
+                fetchReservations();
+                setShowPaymentModal(false);
+                setPaymentReservation(null);
+            }),
+            {
+                loading: 'Processing payment...',
+                success: 'Payment confirmed & Reservation completed!',
+                error: 'Failed to process payment'
+            }
+        );
+    };
+
     if (loading) return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Loading Admin Panel...</div>;
 
     return (
@@ -166,6 +265,18 @@ export default function AdminDashboard() {
                         <LayoutDashboard className="h-5 w-5" /> Shop Details
                     </button>
                     <button
+                        onClick={() => setActiveTab('reservations')}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'reservations' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+                    >
+                        <Calendar className="h-5 w-5" /> Reservations
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('hours')}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'hours' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+                    >
+                        <Clock className="h-5 w-5" /> Operating Hours
+                    </button>
+                    <button
                         onClick={() => setActiveTab('services')}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'services' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
                     >
@@ -176,12 +287,6 @@ export default function AdminDashboard() {
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'barbers' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
                     >
                         <Users className="h-5 w-5" /> Barbers
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('hours')}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'hours' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
-                    >
-                        <Clock className="h-5 w-5" /> Operating Hours
                     </button>
                 </nav>
                 <div className="p-4 border-t border-slate-700">
@@ -316,6 +421,149 @@ export default function AdminDashboard() {
                         </div>
                     </div>
                 )}
+                
+                {activeTab === 'reservations' && (
+                    <div>
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                            <h2 className="text-2xl font-bold">Manage Reservations</h2>
+                            
+                            <div className="flex flex-wrap gap-3 items-center w-full md:w-auto">
+                                <div className="relative flex-1 md:w-64">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+                                    <input 
+                                        type="text" 
+                                        placeholder="Search customer..." 
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        value={reservationFilters.search}
+                                        onChange={(e) => setReservationFilters({...reservationFilters, search: e.target.value, page: 1})} 
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
+                                    <Calendar className="h-4 w-4 text-slate-400" />
+                                    <input 
+                                        type="date" 
+                                        className="bg-transparent border-none focus:outline-none text-sm text-white"
+                                        value={reservationFilters.date}
+                                        onChange={(e) => setReservationFilters({...reservationFilters, date: e.target.value, page: 1})}
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
+                                    <Filter className="h-4 w-4 text-slate-400" />
+                                    <select 
+                                        className="bg-transparent border-none focus:outline-none text-sm text-white"
+                                        value={reservationFilters.status}
+                                        onChange={(e) => setReservationFilters({...reservationFilters, status: e.target.value, page: 1})}
+                                    >
+                                        <option value="all">All Status</option>
+                                        <option value="menunggu">Menunggu</option>
+                                        <option value="dikonfirmasi">Dikonfirmasi</option>
+                                        <option value="selesai">Selesai</option>
+                                        <option value="ditolak">Ditolak</option>
+                                        <option value="dibatalkan">Dibatalkan</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden flex flex-col">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-slate-700/50 text-slate-400">
+                                        <tr>
+                                            <th className="p-4">Date & Time</th>
+                                            <th className="p-4">Customer</th>
+                                            <th className="p-4">Service</th>
+                                            <th className="p-4">Barber</th>
+                                            <th className="p-4">Status</th>
+                                            <th className="p-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-700">
+                                        {reservations.map(res => (
+                                            <tr key={res.id} className="hover:bg-slate-700/30">
+                                                <td className="p-4">
+                                                    <div className="font-medium">{res.tanggal}</div>
+                                                    <div className="text-xs text-slate-400">{res.waktu_mulai}</div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="font-medium">{res.user?.name}</div>
+                                                    <div className="text-xs text-slate-400">{res.user?.email}</div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="font-medium">{res.layanan?.nama_layanan}</div>
+                                                    <div className="text-xs text-slate-400">{res.layanan?.durasi_menit} mins</div>
+                                                </td>
+                                                <td className="p-4 font-medium">{res.tukang_cukur?.nama}</td>
+                                                <td className="p-4">
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
+                                                        res.status === 'menunggu' ? 'bg-yellow-900/30 text-yellow-400 border-yellow-700/50' :
+                                                        res.status === 'dikonfirmasi' ? 'bg-green-900/30 text-green-400 border-green-700/50' :
+                                                        res.status === 'selesai' ? 'bg-blue-900/30 text-blue-400 border-blue-700/50' :
+                                                        'bg-red-900/30 text-red-400 border-red-700/50'
+                                                    }`}>
+                                                        {res.status.charAt(0).toUpperCase() + res.status.slice(1)}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        {res.status === 'menunggu' && (
+                                                            <>
+                                                                <button onClick={() => updateReservationStatus(res.id, 'dikonfirmasi')} className="p-1.5 bg-green-900/30 text-green-400 rounded hover:bg-green-900/50 border border-green-800" title="Approve">
+                                                                    <CheckCircle className="h-4 w-4" />
+                                                                </button>
+                                                                <button onClick={() => updateReservationStatus(res.id, 'ditolak')} className="p-1.5 bg-amber-900/30 text-amber-400 rounded hover:bg-amber-900/50 border border-amber-800" title="Reject">
+                                                                    <XCircle className="h-4 w-4" />
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                        {res.status === 'dikonfirmasi' && (
+                                                            <button onClick={() => handlePayment(res)} className="p-1.5 bg-blue-900/30 text-blue-400 rounded hover:bg-blue-900/50 border border-blue-800" title="Confirm Payment">
+                                                                <Banknote className="h-4 w-4" />
+                                                            </button>
+                                                        )}
+                                                        <button onClick={() => deleteReservation(res.id)} className="p-1.5 bg-red-900/30 text-red-400 rounded hover:bg-red-900/50 border border-red-800" title="Delete">
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {reservations.length === 0 && (
+                                            <tr>
+                                                <td colSpan="6" className="p-8 text-center text-slate-400">
+                                                    No reservations found.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div className="p-4 border-t border-slate-700 flex items-center justify-between">
+                                <div className="text-sm text-slate-400">
+                                    Showing {reservationMeta.from || 0} to {reservationMeta.to || 0} of {reservationMeta.total} entries
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        onClick={() => setReservationFilters(prev => ({ ...prev, page: prev.page - 1 }))}
+                                        disabled={reservationMeta.current_page === 1}
+                                        className="p-2 rounded bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </button>
+                                    <span className="text-sm font-medium px-2">Page {reservationMeta.current_page} of {reservationMeta.last_page}</span>
+                                    <button 
+                                        onClick={() => setReservationFilters(prev => ({ ...prev, page: prev.page + 1 }))}
+                                        disabled={reservationMeta.current_page === reservationMeta.last_page}
+                                        className="p-2 rounded bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {activeTab === 'hours' && <OperatingHours />}
             </main>
 
@@ -353,6 +601,44 @@ export default function AdminDashboard() {
                                     <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded">{editId ? 'Update' : 'Create'}</button>
                                 </div>
                             </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Payment Modal */}
+            <AnimatePresence>
+                {showPaymentModal && paymentReservation && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-slate-800 w-full max-w-sm rounded-xl p-6 border border-slate-700">
+                            <div className="flex items-center gap-3 mb-4 text-green-400">
+                                <div className="p-2 bg-green-900/30 rounded-full border border-green-700/50">
+                                    <Banknote className="h-6 w-6" />
+                                </div>
+                                <h2 className="text-xl font-bold text-white">Confirm Payment</h2>
+                            </div>
+                            
+                            <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700 space-y-3 mb-6">
+                                <div>
+                                    <div className="text-sm text-slate-400">Service</div>
+                                    <div className="font-medium text-lg">{paymentReservation.layanan?.nama_layanan}</div>
+                                </div>
+                                <div className="flex justify-between items-end border-t border-slate-700 pt-3">
+                                    <div className="text-sm text-slate-400">Total Price</div>
+                                    <div className="text-xl font-bold text-green-400">
+                                        Rp {Number(paymentReservation.layanan?.harga).toLocaleString()}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-3">
+                                <button onClick={() => { setShowPaymentModal(false); setPaymentReservation(null); }} className="px-4 py-2 hover:bg-slate-700 rounded-lg font-medium transition-colors">
+                                    Cancel
+                                </button>
+                                <button onClick={confirmPayment} className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium flex items-center gap-2 transition-colors">
+                                    <CheckCircle className="h-4 w-4" /> Confirm & Complete
+                                </button>
+                            </div>
                         </motion.div>
                     </div>
                 )}
