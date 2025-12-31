@@ -49,7 +49,31 @@ class ReservasiController extends Controller
             ], 422);
         }
 
+        // Validasi waktu berdasarkan reservasi yang sudah dikonfirmasi untuk tukang cukur tersebut
+        $confirmedReservations = Reservasi::where('tukang_cukur_id', $request->tukang_cukur_id)
+            ->where('tanggal', $request->tanggal)
+            ->whereIn('status', ['menunggu', 'dikonfirmasi'])
+            ->with('layanan')
+            ->get();
 
+        // Cari waktu akhir dari reservasi terakhir
+        $latestEndTime = null;
+        foreach ($confirmedReservations as $reservasi) {
+            $bookingStart = Carbon::parse($reservasi->waktu_mulai);
+            $bookingEnd = $bookingStart->copy()->addMinutes($reservasi->layanan->durasi_menit ?? 0);
+            
+            if ($latestEndTime === null || $bookingEnd->gt($latestEndTime)) {
+                $latestEndTime = $bookingEnd;
+            }
+        }
+
+        // Jika ada reservasi sebelumnya, waktu request harus setelah waktu akhir reservasi terakhir
+        if ($latestEndTime !== null && $waktuMulai->lt($latestEndTime)) {
+            return response()->json([
+                'message' => 'The barber is not available at the requested time. Earliest available time: ' .
+                    $latestEndTime->format('H:i')
+            ], 422);
+        }
 
         $reservasi = Reservasi::create([
             'user_id' => $request->user()->id,

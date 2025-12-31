@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../api';
-import { Calendar, Clock, MapPin, Star, MessageSquare } from 'lucide-react';
+import { Calendar, Clock, MapPin, Star, MessageSquare, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function History() {
+  const navigate = useNavigate();
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showReviewModal, setShowReviewModal] = useState(null); // reservation id
@@ -59,6 +61,12 @@ export default function History() {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
+        <button 
+          onClick={() => navigate('/')}
+          className="mb-6 flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="h-5 w-5" /> Back
+        </button>
         <h1 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
             My Reservations
         </h1>

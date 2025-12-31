@@ -116,7 +116,54 @@ export default function BarbershopDetail() {
           </div>
         </section>
 
-        {/* Barbers */}
+        {/* Barbers Availability */}
+        <section>
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <Scissors className="h-6 w-6 text-yellow-500" /> Barbers Availability Today
+          </h2>
+          {barbershop.is_open_today ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {barbershop.barbers_availability?.map((barber) => (
+                <motion.div 
+                  key={barber.barber_id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-slate-600 transition-colors"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <h3 className="font-bold text-lg text-white">{barber.barber_name}</h3>
+                    <span className="text-xs bg-slate-700 px-2 py-1 rounded-full text-slate-300">
+                      {barber.total_bookings_today} bookings
+                    </span>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2 text-slate-400">
+                      <Clock className="h-4 w-4" />
+                      <span>Hours: {barber.operating_hours.start} - {barber.operating_hours.end}</span>
+                    </div>
+                    {barber.next_available_time ? (
+                      <div className="flex items-center gap-2 text-green-400 font-medium mt-3">
+                        <Calendar className="h-4 w-4" />
+                        <span>Next available: {barber.next_available_time}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-red-400 font-medium mt-3">
+                        <Calendar className="h-4 w-4" />
+                        <span>Fully booked today</span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 text-center text-slate-400">
+              <p>The barbershop is closed today</p>
+            </div>
+          )}
+        </section>
+
+        {/* Book Appointment */}
         <section>
           <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
             <Calendar className="h-6 w-6 text-green-500" /> Book an Appointment
