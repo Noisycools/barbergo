@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\BarbershopController;
 use App\Http\Controllers\Api\V1\ReservasiController;
 use App\Http\Controllers\Api\V1\PromosiController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\SuperAdmin\UsersController;
 
 Route::prefix('v1')->group(function () {
     // Auth
@@ -46,7 +47,7 @@ Route::prefix('v1')->group(function () {
         // Super Admin Routes
         Route::prefix('super-admin')->group(function () {
             Route::apiResource('barbershop', \App\Http\Controllers\Api\V1\SuperAdmin\BarbershopController::class);
-            // Add user management later if needed
+            Route::apiResource('users', UsersController::class)->except(['store', 'show']);
         });
     });
 });
