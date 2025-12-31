@@ -14,6 +14,7 @@ class Reservasi extends Model
         'tanggal',
         'waktu_mulai',
         'status',
+        'promosi_id',
     ];
 
     public function user()
@@ -39,5 +40,10 @@ class Reservasi extends Model
     public function ulasan()
     {
         return $this->hasOne(Ulasan::class);
+    }
+
+    public function promosi()
+    {
+        return $this->belongsTo(Promosi::class);
     }
 }

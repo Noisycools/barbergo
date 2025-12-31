@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../../api';
 import { useAuth } from '../../context/AuthContext';
-import { Store, Users, Plus, Trash2, Edit } from 'lucide-react';
+import { Store, Users, Plus, Trash2, Edit, Ticket } from 'lucide-react';
 import ManageUsers from './ManageUsers';
+import ManagePromotions from './ManagePromotions';
 
 export default function SuperAdminDashboard() {
     const { user, logout } = useAuth();
@@ -126,6 +127,12 @@ export default function SuperAdminDashboard() {
                     >
                         <Users className="h-5 w-5" /> Manage Users
                     </button>
+                    <button
+                        onClick={() => setActiveTab('promotions')}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'promotions' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+                    >
+                        <Ticket className="h-5 w-5" /> Manage Promotions
+                    </button>
                 </nav>
                 <div className="p-4 border-t border-slate-700">
                     <div className="flex items-center gap-3 mb-4 px-2">
@@ -145,7 +152,7 @@ export default function SuperAdminDashboard() {
             {/* Main Content */}
             <main className="flex-1 p-8 overflow-y-auto">
                 <h2 className="text-3xl font-bold mb-8">
-                    {activeTab === 'barbershops' ? 'All Barbershops' : 'Manage Users'}
+                    {activeTab === 'barbershops' ? 'All Barbershops' : activeTab === 'users' ? 'Manage Users' : 'Manage Promotions'}
                 </h2>
 
                 {activeTab === 'barbershops' && (
@@ -178,6 +185,10 @@ export default function SuperAdminDashboard() {
 
                 {activeTab === 'users' && (
                     <ManageUsers />
+                )}
+
+                {activeTab === 'promotions' && (
+                    <ManagePromotions />
                 )}
             </main>
 
