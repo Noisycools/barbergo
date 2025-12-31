@@ -41,6 +41,19 @@ export default function AdminDashboard() {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentReservation, setPaymentReservation] = useState(null);
 
+    // Revenue State
+    const [revenueData, setRevenueData] = useState({
+        total_revenue: 0,
+        total_completed: 0,
+        by_service: [],
+        by_barber: [],
+        recent_transactions: []
+    });
+    const [revenueFilters, setRevenueFilters] = useState({
+        start_date: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+        end_date: new Date().toISOString().split('T')[0]
+    });
+
     useEffect(() => {
         fetchData();
     }, []);
@@ -94,7 +107,24 @@ export default function AdminDashboard() {
         if (activeTab === 'reservations') {
             fetchReservations();
         }
-    }, [reservationFilters, activeTab]);
+        if (activeTab === 'revenue') {
+            fetchRevenue();
+        }
+    }, [reservationFilters, activeTab, revenueFilters]);
+
+    const fetchRevenue = async () => {
+        try {
+            const params = new URLSearchParams({
+                start_date: revenueFilters.start_date,
+                end_date: revenueFilters.end_date
+            });
+            const { data } = await api.get(`/admin/revenue?${params.toString()}`);
+            setRevenueData(data);
+        } catch (error) {
+            console.error('Error fetching revenue', error);
+            toast.error('Failed to load revenue data');
+        }
+    };
 
     const updateShop = async (e) => {
         e.preventDefault();
@@ -287,6 +317,12 @@ export default function AdminDashboard() {
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'barbers' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
                     >
                         <Users className="h-5 w-5" /> Barbers
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('revenue')}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'revenue' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+                    >
+                        <Banknote className="h-5 w-5" /> Revenue
                     </button>
                 </nav>
                 <div className="p-4 border-t border-slate-700">
@@ -564,6 +600,222 @@ export default function AdminDashboard() {
                         </div>
                     </div>
                 )}
+
+                {activeTab === 'revenue' && (
+                    <div>
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                            <h2 className="text-2xl font-bold">Revenue Report</h2>
+                            <div className="flex gap-3 items-center">
+                                <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
+                                    <Calendar className="h-4 w-4 text-slate-400" />
+                                    <input 
+                                        type="date" 
+                                        className="bg-transparent border-none focus:outline-none text-sm text-white"
+                                        value={revenueFilters.start_date}
+                                        onChange={(e) => setRevenueFilters({...revenueFilters, start_date: e.target.value})}
+                                    />
+                                </div>
+                                <span className="text-slate-400">to</span>
+                                <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
+                                    <Calendar className="h-4 w-4 text-slate-400" />
+                                    <input 
+                                        type="date" 
+                                        className="bg-transparent border-none focus:outline-none text-sm text-white"
+                                        value={revenueFilters.end_date}
+                                        onChange={(e) => setRevenueFilters({...revenueFilters, end_date: e.target.value})}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Summary Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <motion.div 
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-gradient-to-br from-green-900/40 to-green-800/20 border border-green-700/50 rounded-xl p-6"
+                            >
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="p-2 bg-green-500/20 rounded-lg">
+                                        <Banknote className="h-6 w-6 text-green-400" />
+                                    </div>
+                                    <h3 className="text-sm font-medium text-slate-400">Total Revenue</h3>
+                                </div>
+                                <div className="text-3xl font-bold text-green-400">
+                                    Rp {Number(revenueData.total_revenue || 0).toLocaleString()}
+                                </div>
+                            </motion.div>
+
+                            <motion.div 
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
+                                className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-700/50 rounded-xl p-6"
+                            >
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="p-2 bg-blue-500/20 rounded-lg">
+                                        <CheckCircle className="h-6 w-6 text-blue-400" />
+                                    </div>
+                                    <h3 className="text-sm font-medium text-slate-400">Completed</h3>
+                                </div>
+                                <div className="text-3xl font-bold text-blue-400">
+                                    {revenueData.total_completed || 0}
+                                </div>
+                                <div className="text-xs text-slate-500 mt-1">Reservations</div>
+                            </motion.div>
+
+                            <motion.div 
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="bg-gradient-to-br from-purple-900/40 to-purple-800/20 border border-purple-700/50 rounded-xl p-6"
+                            >
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="p-2 bg-purple-500/20 rounded-lg">
+                                        <Banknote className="h-6 w-6 text-purple-400" />
+                                    </div>
+                                    <h3 className="text-sm font-medium text-slate-400">Average/Booking</h3>
+                                </div>
+                                <div className="text-3xl font-bold text-purple-400">
+                                    Rp {Number(revenueData.total_completed > 0 ? revenueData.total_revenue / revenueData.total_completed : 0).toLocaleString('id-ID', {maximumFractionDigits: 0})}
+                                </div>
+                            </motion.div>
+                        </div>
+
+                        {/* Revenue by Service */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                            <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+                                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                    <Scissors className="h-5 w-5 text-purple-400" />
+                                    Revenue by Service
+                                </h3>
+                                <div className="space-y-3">
+                                    {revenueData.by_service?.length > 0 ? revenueData.by_service.map((item, index) => (
+                                        <motion.div 
+                                            key={index}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: index * 0.05 }}
+                                            className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg"
+                                        >
+                                            <div>
+                                                <div className="font-medium">{item.service_name}</div>
+                                                <div className="text-xs text-slate-400">{item.bookings_count} bookings</div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="font-bold text-green-400">
+                                                    Rp {Number(item.total_revenue).toLocaleString()}
+                                                </div>
+                                                <div className="text-xs text-slate-400">
+                                                    {item.bookings_count > 0 && revenueData.total_completed > 0
+                                                        ? `${((item.bookings_count / revenueData.total_completed) * 100).toFixed(1)}%`
+                                                        : '0%'
+                                                    }
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )) : (
+                                        <div className="text-center text-slate-400 py-8">No data available</div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Revenue by Barber */}
+                            <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+                                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                    <Users className="h-5 w-5 text-blue-400" />
+                                    Revenue by Barber
+                                </h3>
+                                <div className="space-y-3">
+                                    {revenueData.by_barber?.length > 0 ? revenueData.by_barber.map((item, index) => (
+                                        <motion.div 
+                                            key={index}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: index * 0.05 }}
+                                            className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center font-bold">
+                                                    {item.barber_name.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <div className="font-medium">{item.barber_name}</div>
+                                                    <div className="text-xs text-slate-400">{item.bookings_count} bookings</div>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="font-bold text-green-400">
+                                                    Rp {Number(item.total_revenue).toLocaleString()}
+                                                </div>
+                                                <div className="text-xs text-slate-400">
+                                                    {item.bookings_count > 0 && revenueData.total_completed > 0
+                                                        ? `${((item.bookings_count / revenueData.total_completed) * 100).toFixed(1)}%`
+                                                        : '0%'
+                                                    }
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )) : (
+                                        <div className="text-center text-slate-400 py-8">No data available</div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Recent Transactions */}
+                        <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                            <div className="p-6 border-b border-slate-700">
+                                <h3 className="text-lg font-bold flex items-center gap-2">
+                                    <Calendar className="h-5 w-5 text-green-400" />
+                                    Recent Completed Bookings
+                                </h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-slate-700/50 text-slate-400">
+                                        <tr>
+                                            <th className="p-4">Date</th>
+                                            <th className="p-4">Customer</th>
+                                            <th className="p-4">Service</th>
+                                            <th className="p-4">Barber</th>
+                                            <th className="p-4 text-right">Revenue</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-700">
+                                        {revenueData.recent_transactions?.length > 0 ? revenueData.recent_transactions.map((trans, index) => (
+                                            <motion.tr 
+                                                key={index}
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                transition={{ delay: index * 0.03 }}
+                                                className="hover:bg-slate-700/30"
+                                            >
+                                                <td className="p-4">
+                                                    <div className="font-medium">{trans.tanggal}</div>
+                                                    <div className="text-xs text-slate-400">{trans.waktu_mulai}</div>
+                                                </td>
+                                                <td className="p-4 font-medium">{trans.customer_name}</td>
+                                                <td className="p-4">{trans.service_name}</td>
+                                                <td className="p-4">{trans.barber_name}</td>
+                                                <td className="p-4 text-right font-bold text-green-400">
+                                                    Rp {Number(trans.revenue).toLocaleString()}
+                                                </td>
+                                            </motion.tr>
+                                        )) : (
+                                            <tr>
+                                                <td colSpan="5" className="p-8 text-center text-slate-400">
+                                                    No completed bookings in this period
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {activeTab === 'hours' && <OperatingHours />}
             </main>
 

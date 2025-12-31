@@ -36,6 +36,7 @@ Route::prefix('v1')->group(function () {
             Route::put('/barbershop', [\App\Http\Controllers\Api\V1\Admin\BarbershopController::class, 'update']);
             Route::put('/barbershop/schedule', [\App\Http\Controllers\Api\V1\Admin\BarbershopController::class, 'updateSchedule']);
             Route::get('/barbershop/schedule', [\App\Http\Controllers\Api\V1\Admin\BarbershopController::class, 'getSchedule']);
+            Route::get('/revenue', [\App\Http\Controllers\Api\V1\Admin\BarbershopController::class, 'getRevenue']);
 
             Route::apiResource('layanan', \App\Http\Controllers\Api\V1\Admin\LayananController::class);
             Route::apiResource('tukang-cukur', \App\Http\Controllers\Api\V1\Admin\TukangCukurController::class);
