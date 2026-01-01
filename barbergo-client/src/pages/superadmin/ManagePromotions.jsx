@@ -147,7 +147,9 @@ export default function ManagePromotions() {
             tanggal_berakhir: formatInputDate(promo.tanggal_berakhir),
             quota_limit: promo.quota_limit || 0,
             status: Boolean(promo.status),
-            scope: promo.barbershop_id ? 'specific' : 'global',
+            quota_limit: promo.quota_limit || 0,
+            status: Boolean(promo.status),
+            scope: promo.is_global ? 'global' : 'specific',
             barbershop_id: promo.barbershop_id || ''
         });
         setShowModal(true);
@@ -381,10 +383,10 @@ export default function ManagePromotions() {
                                         <div className="text-white font-medium">{p.reservasis_count || 0} / {p.quota_limit}</div>
                                     </td>
                                     <td className="p-4">
-                                        {p.barbershop ? (
+                                        {!p.is_global ? (
                                             <div className="flex items-center gap-2 text-slate-300">
                                                 <Store className="h-4 w-4 shrink-0" />
-                                                <span className="truncate max-w-[150px]" title={p.barbershop.nama}>{p.barbershop.nama}</span>
+                                                <span className="truncate max-w-[150px]" title={p.barbershop?.nama}>{p.barbershop?.nama || '-'}</span>
                                             </div>
                                         ) : (
                                             <div className="flex items-center gap-2 text-blue-300">

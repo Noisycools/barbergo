@@ -16,11 +16,20 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
 
     // Reservation Filters & Pagination
-    const [reservationFilters, setReservationFilters] = useState({
-        date: new Date().toISOString().split('T')[0],
-        status: 'all',
-        search: '',
-        page: 1
+    const [reservationFilters, setReservationFilters] = useState(() => {
+        const now = new Date();
+        const start = new Date(now);
+        start.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+        const end = new Date(now);
+        end.setDate(now.getDate() + (6 - now.getDay())); // End of week (Saturday)
+
+        return {
+            start_date: start.toISOString().split('T')[0],
+            end_date: end.toISOString().split('T')[0],
+            status: 'all',
+            search: '',
+            page: 1
+        };
     });
     const [reservationMeta, setReservationMeta] = useState({
         current_page: 1,
@@ -81,7 +90,8 @@ export default function AdminDashboard() {
         try {
             const params = new URLSearchParams({
                 page: reservationFilters.page,
-                date: reservationFilters.date,
+                start_date: reservationFilters.start_date,
+                end_date: reservationFilters.end_date,
                 search: reservationFilters.search
             });
             
@@ -479,8 +489,18 @@ export default function AdminDashboard() {
                                     <input 
                                         type="date" 
                                         className="bg-transparent border-none focus:outline-none text-sm text-white"
-                                        value={reservationFilters.date}
-                                        onChange={(e) => setReservationFilters({...reservationFilters, date: e.target.value, page: 1})}
+                                        value={reservationFilters.start_date}
+                                        onChange={(e) => setReservationFilters({...reservationFilters, start_date: e.target.value, page: 1})}
+                                    />
+                                </div>
+                                <span className="text-slate-400 self-center">to</span>
+                                <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
+                                    <Calendar className="h-4 w-4 text-slate-400" />
+                                    <input 
+                                        type="date" 
+                                        className="bg-transparent border-none focus:outline-none text-sm text-white"
+                                        value={reservationFilters.end_date}
+                                        onChange={(e) => setReservationFilters({...reservationFilters, end_date: e.target.value, page: 1})}
                                     />
                                 </div>
                                 <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
@@ -877,8 +897,24 @@ export default function AdminDashboard() {
                                 </div>
                                 <div className="flex justify-between items-end border-t border-slate-700 pt-3">
                                     <div className="text-sm text-slate-400">Total Price</div>
-                                    <div className="text-xl font-bold text-green-400">
-                                        Rp {Number(paymentReservation.layanan?.harga).toLocaleString()}
+                                    <div className="text-right">
+                                        {paymentReservation.promosi ? (
+                                            <>
+                                                <div className="text-sm text-slate-400 line-through">
+                                                    Rp {Number(paymentReservation.layanan?.harga).toLocaleString()}
+                                                </div>
+                                                <div className="text-xs text-purple-400 mb-1">
+                                                    Promo: {paymentReservation.promosi.kode_promo} ({paymentReservation.promosi.diskon}% OFF)
+                                                </div>
+                                                <div className="text-xl font-bold text-green-400">
+                                                    Rp {(Number(paymentReservation.layanan?.harga) * (100 - paymentReservation.promosi.diskon) / 100).toLocaleString()}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="text-xl font-bold text-green-400">
+                                                Rp {Number(paymentReservation.layanan?.harga).toLocaleString()}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

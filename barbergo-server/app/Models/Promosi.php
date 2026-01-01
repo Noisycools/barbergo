@@ -15,11 +15,13 @@ class Promosi extends Model
         'tanggal_mulai',
         'tanggal_berakhir',
         'status',
+        'is_global',
         'quota_limit',
     ];
 
     protected $casts = [
         'status' => 'boolean',
+        'is_global' => 'boolean',
         'tanggal_mulai' => 'datetime',
         'tanggal_berakhir' => 'datetime',
     ];

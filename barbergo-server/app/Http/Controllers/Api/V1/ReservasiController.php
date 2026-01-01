@@ -19,7 +19,31 @@ class ReservasiController extends Controller
             'tukang_cukur_id' => 'required|exists:tukang_cukurs,id',
             'tanggal' => 'required|date|after_or_equal:today',
             'waktu_mulai' => 'required|date_format:H:i',
+            'promosi_id' => 'nullable|exists:promosis,id',
         ]);
+
+        if ($request->has('promosi_id')) {
+            $promosi = \App\Models\Promosi::find($request->promosi_id);
+
+            // Check active status
+            if (!$promosi->status) {
+                return response()->json(['message' => 'This promo is no longer active.'], 422);
+            }
+
+            // Check date range
+            $reservationDate = Carbon::parse($request->tanggal)->startOfDay();
+            if ($reservationDate->lt($promosi->tanggal_mulai) || $reservationDate->gt($promosi->tanggal_berakhir)) {
+                return response()->json(['message' => 'This promo is expired or not yet started.'], 422);
+            }
+
+            // Check quota limit
+            if ($promosi->quota_limit) {
+                $usedCount = Reservasi::where('promosi_id', $promosi->id)->count();
+                if ($usedCount >= $promosi->quota_limit) {
+                    return response()->json(['message' => 'This promo usage limit has been exceeded.'], 422);
+                }
+            }
+        }
 
         // Mengecek hari dari tanggal yang dipilih
         $tanggal = Carbon::parse($request->tanggal);
@@ -61,7 +85,7 @@ class ReservasiController extends Controller
         foreach ($confirmedReservations as $reservasi) {
             $bookingStart = Carbon::parse($reservasi->waktu_mulai);
             $bookingEnd = $bookingStart->copy()->addMinutes($reservasi->layanan->durasi_menit ?? 0);
-            
+
             if ($latestEndTime === null || $bookingEnd->gt($latestEndTime)) {
                 $latestEndTime = $bookingEnd;
             }
@@ -83,6 +107,7 @@ class ReservasiController extends Controller
             'tanggal' => $request->tanggal,
             'waktu_mulai' => $request->waktu_mulai,
             'status' => 'menunggu',
+            'promosi_id' => $request->promosi_id ?? null,
         ]);
 
         return response()->json($reservasi, 201);

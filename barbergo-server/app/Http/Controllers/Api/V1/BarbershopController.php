@@ -55,7 +55,7 @@ class BarbershopController extends Controller
 
         // Calculate available times for each barber
         $barbersAvailability = [];
-        
+
         if ($operatingHour) {
             foreach ($barbershop->tukangCukurs as $barber) {
                 // Get all confirmed/pending reservations for this barber today
@@ -75,7 +75,7 @@ class BarbershopController extends Controller
                 foreach ($reservations as $reservation) {
                     $bookingStart = Carbon::parse($reservation->waktu_mulai);
                     $bookingEnd = $bookingStart->copy()->addMinutes($reservation->layanan->durasi_menit ?? 0);
-                    
+
                     if ($bookingEnd->gt($nextAvailableTime)) {
                         $nextAvailableTime = $bookingEnd;
                     }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api';
 import { useAuth } from '../../context/AuthContext';
-import { Calendar, Clock, User, Scissors, CheckCircle, Loader2 } from 'lucide-react';
+import { Calendar, Clock, User, Scissors, CheckCircle, Loader2, Tag } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function BookingForm() {
@@ -16,14 +16,26 @@ export default function BookingForm() {
     tukang_cukur_id: '',
     tanggal: '',
     waktu_mulai: '',
+    promosi_id: '',
   });
 
+  const [promos, setPromos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  // Derived state for available promos
+  const availablePromos = promos.filter(promo => {
+    if (!promo.status) return false;
+    const now = new Date();
+    const startDate = new Date(promo.tanggal_mulai);
+    const endDate = new Date(promo.tanggal_berakhir);
+    return now >= startDate && now <= endDate;
+  });
+
   useEffect(() => {
     fetchBarbershop();
+    fetchPromos();
   }, [id]);
 
   const fetchBarbershop = async () => {
@@ -34,6 +46,15 @@ export default function BookingForm() {
       setError('Failed to load barbershop details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPromos = async () => {
+    try {
+      const { data } = await api.get(`/promosi?barbershop_id=${id}`);
+      setPromos(data);
+    } catch (error) {
+      console.error("Failed to load promos", error);
     }
   };
 
@@ -159,6 +180,36 @@ export default function BookingForm() {
                         />
                     </div>
                 </div>
+
+                {/* Promo Selection */}
+                {availablePromos.length > 0 && (
+                  <div className="space-y-4">
+                      <label className="block text-sm font-medium text-slate-400 flex items-center gap-2">
+                          <Tag className="h-4 w-4" /> Select Promo
+                      </label>
+                      <div className="grid grid-cols-1 gap-4">
+                          {availablePromos.map((promo) => (
+                              <div 
+                                  key={promo.id}
+                                  onClick={() => setFormData({...formData, promosi_id: formData.promosi_id === promo.id ? '' : promo.id})}
+                                  className={`p-4 rounded-xl border cursor-pointer transition-all flex justify-between items-center ${
+                                      formData.promosi_id === promo.id 
+                                      ? 'bg-purple-600/20 border-purple-500 ring-1 ring-purple-500' 
+                                      : 'bg-slate-700/50 border-slate-600 hover:bg-slate-700'
+                                  }`}
+                              >
+                                  <div>
+                                      <div className="font-bold text-white">{promo.nama}</div>
+                                      <div className="text-sm text-slate-400">{promo.kode_promo}</div>
+                                  </div>
+                                  <div className="text-purple-400 font-bold">
+                                      {promo.diskon}% OFF
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+                )}
 
                 <div className="pt-4">
                     <button

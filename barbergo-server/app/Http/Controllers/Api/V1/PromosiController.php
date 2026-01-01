@@ -13,12 +13,12 @@ class PromosiController extends Controller
         $query = Promosi::query();
 
         if ($request->has('barbershop_id')) {
-            $query->where('barbershop_id', $request->barbershop_id);
+            $query->where(function ($q) use ($request) {
+                $q->where('barbershop_id', $request->barbershop_id)
+                    ->orWhere('is_global', true);
+            });
         } else {
-            // Global promos? or all?
-            // Plan says: barbershop_id nullable for global.
-            // If no barbershop_id sent, maybe show global?
-            $query->whereNull('barbershop_id');
+            $query->where('is_global', true);
         }
 
         $promosis = $query->get();

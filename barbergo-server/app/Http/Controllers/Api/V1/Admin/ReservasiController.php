@@ -16,10 +16,12 @@ class ReservasiController extends Controller
         }
 
         $query = $barbershop->reservasis()
-            ->with(['user', 'layanan', 'tukangCukur'])
+            ->with(['user', 'layanan', 'tukangCukur', 'promosi'])
             ->latest();
 
-        if ($request->filled('date')) {
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('tanggal', [$request->start_date, $request->end_date]);
+        } elseif ($request->filled('date')) {
             $query->whereDate('tanggal', $request->date);
         }
 

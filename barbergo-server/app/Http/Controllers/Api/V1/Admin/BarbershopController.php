@@ -101,45 +101,53 @@ class BarbershopController extends Controller
         $completedReservations = Reservasi::where('barbershop_id', $barbershop->id)
             ->where('status', 'selesai')
             ->whereBetween('tanggal', [$startDate, $endDate])
-            ->with(['layanan', 'tukangCukur', 'user'])
+            ->with(['layanan', 'tukangCukur', 'user', 'promosi'])
             ->get();
 
+        // Helper to calculate revenue for a reservation
+        $calculateRevenue = function ($reservation) {
+            $price = $reservation->layanan->harga ?? 0;
+            if ($reservation->promosi) {
+                $discount = $reservation->promosi->diskon;
+                $price = $price - ($price * $discount / 100);
+            }
+            return $price;
+        };
+
         // Calculate total revenue
-        $totalRevenue = $completedReservations->sum(function($reservation) {
-            return $reservation->layanan->harga ?? 0;
-        });
+        $totalRevenue = $completedReservations->sum($calculateRevenue);
 
         // Revenue by service
-        $byService = $completedReservations->groupBy('layanan_id')->map(function($group) {
+        $byService = $completedReservations->groupBy('layanan_id')->map(function ($group) use ($calculateRevenue) {
             $layanan = $group->first()->layanan;
             return [
                 'service_name' => $layanan->nama_layanan,
                 'bookings_count' => $group->count(),
-                'total_revenue' => $group->sum(fn($r) => $r->layanan->harga ?? 0)
+                'total_revenue' => $group->sum($calculateRevenue)
             ];
         })->values()->sortByDesc('total_revenue')->values();
 
         // Revenue by barber
-        $byBarber = $completedReservations->groupBy('tukang_cukur_id')->map(function($group) {
+        $byBarber = $completedReservations->groupBy('tukang_cukur_id')->map(function ($group) use ($calculateRevenue) {
             $barber = $group->first()->tukangCukur;
             return [
                 'barber_name' => $barber->nama,
                 'bookings_count' => $group->count(),
-                'total_revenue' => $group->sum(fn($r) => $r->layanan->harga ?? 0)
+                'total_revenue' => $group->sum($calculateRevenue)
             ];
         })->values()->sortByDesc('total_revenue')->values();
 
         // Recent transactions (last 10)
         $recentTransactions = $completedReservations->sortByDesc('tanggal')
             ->take(10)
-            ->map(function($reservation) {
+            ->map(function ($reservation) use ($calculateRevenue) {
                 return [
                     'tanggal' => $reservation->tanggal,
                     'waktu_mulai' => $reservation->waktu_mulai,
                     'customer_name' => $reservation->user->name,
                     'service_name' => $reservation->layanan->nama_layanan,
                     'barber_name' => $reservation->tukangCukur->nama,
-                    'revenue' => $reservation->layanan->harga
+                    'revenue' => $calculateRevenue($reservation)
                 ];
             })->values();
 

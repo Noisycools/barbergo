@@ -39,7 +39,7 @@ class PromoController extends Controller
         // Filter Barbershop (Scope)
         if ($request->filled('barbershop_id') && $request->barbershop_id !== 'all') {
             if ($request->barbershop_id === 'global') {
-                $query->whereNull('barbershop_id');
+                $query->where('is_global', true);
             } else {
                 $query->where('barbershop_id', $request->barbershop_id);
             }
@@ -68,9 +68,6 @@ class PromoController extends Controller
         return response()->json($promos);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -79,13 +76,14 @@ class PromoController extends Controller
             'diskon' => 'required|integer|min:1|max:100',
             'tanggal_mulai' => 'required|date_format:Y-m-d H:i:s|after_or_equal:today',
             'tanggal_berakhir' => 'required|date_format:Y-m-d H:i:s|after:tanggal_mulai',
-            'quota_limit' => 'required|integer|min:0', // 0 or more. If user treats 0 as unlimited, logic handles it. But user said "quota limit", implies setting it.
+            'quota_limit' => 'required|integer|min:0',
             'status' => 'required|boolean',
-            'barbershop_id' => 'nullable|exists:barbershops,id', // Nullable for global
-            'scope' => 'required|in:global,specific', // Helper for validation
+            'barbershop_id' => 'nullable|exists:barbershops,id',
+            'scope' => 'required|in:global,specific',
         ]);
 
-        if ($validated['scope'] === 'global') {
+        $isGlobal = $validated['scope'] === 'global';
+        if ($isGlobal) {
             $validated['barbershop_id'] = null;
         } else {
             if (empty($validated['barbershop_id'])) {
@@ -102,6 +100,7 @@ class PromoController extends Controller
             'quota_limit' => $validated['quota_limit'],
             'status' => $validated['status'],
             'barbershop_id' => $validated['barbershop_id'],
+            'is_global' => $isGlobal,
         ]);
 
         return response()->json(['message' => 'Promotion created successfully', 'data' => $promo], 201);
@@ -126,13 +125,6 @@ class PromoController extends Controller
                 'status' => 'required|boolean'
             ]);
 
-            // Check if user tried to change other fields
-            $allInputs = $request->all();
-            $deniedFields = ['nama', 'kode_promo', 'diskon', 'tanggal_mulai', 'tanggal_berakhir', 'quota_limit', 'barbershop_id'];
-
-            // Note: Frontend might send all fields back. We should ignore them or validate they match current. 
-            // Better to strictly update only status.
-
             $promo->update(['status' => $validated['status']]);
 
             return response()->json(['message' => 'Promotion status updated (other fields locked due to usage)', 'data' => $promo]);
@@ -143,7 +135,7 @@ class PromoController extends Controller
             'nama' => 'required|string|max:255',
             'kode_promo' => ['required', 'string', 'max:50', Rule::unique('promosis')->ignore($promo->id), 'regex:/^\S*$/'],
             'diskon' => 'required|integer|min:1|max:100',
-            'tanggal_mulai' => 'required|date_format:Y-m-d H:i:s', // Removed after_or_equal:today for edit, as sometimes editing existing promo shouldn't force start date to be today/future if it already started.
+            'tanggal_mulai' => 'required|date_format:Y-m-d H:i:s',
             'tanggal_berakhir' => 'required|date_format:Y-m-d H:i:s|after:tanggal_mulai',
             'quota_limit' => 'required|integer|min:0',
             'status' => 'required|boolean',
@@ -151,7 +143,8 @@ class PromoController extends Controller
             'scope' => 'required|in:global,specific',
         ]);
 
-        if ($validated['scope'] === 'global') {
+        $isGlobal = $validated['scope'] === 'global';
+        if ($isGlobal) {
             $validated['barbershop_id'] = null;
         } else {
             if (empty($validated['barbershop_id'])) {
@@ -168,6 +161,7 @@ class PromoController extends Controller
             'quota_limit' => $validated['quota_limit'],
             'status' => $validated['status'],
             'barbershop_id' => $validated['barbershop_id'],
+            'is_global' => $isGlobal,
         ]);
 
         return response()->json(['message' => 'Promotion updated successfully', 'data' => $promo]);
