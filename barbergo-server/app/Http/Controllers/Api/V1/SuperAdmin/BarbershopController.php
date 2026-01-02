@@ -85,9 +85,31 @@ class BarbershopController extends Controller
             'alamat' => 'required|string',
             'jam_buka' => 'required',
             'jam_tutup' => 'required',
+            'foto' => 'nullable|image|max:2048',
+            'delete_foto' => 'boolean'
         ]);
 
-        $barbershop->update($request->only(['nama', 'alamat', 'jam_buka', 'jam_tutup']));
+        $data = $request->only(['nama', 'alamat', 'jam_buka', 'jam_tutup']);
+
+        // Handle File Delete
+        if ($request->boolean('delete_foto')) {
+            if ($barbershop->foto) {
+                Storage::disk('public')->delete($barbershop->foto);
+                $data['foto'] = null;
+            }
+        }
+
+        // Handle File Upload
+        if ($request->hasFile('foto')) {
+            // Delete old photo if exists
+            if ($barbershop->foto) {
+                Storage::disk('public')->delete($barbershop->foto);
+            }
+            $path = $request->file('foto')->store('barbershops', 'public');
+            $data['foto'] = $path;
+        }
+
+        $barbershop->update($data);
 
         return response()->json(['message' => 'Barbershop updated', 'data' => $barbershop]);
     }
@@ -95,7 +117,9 @@ class BarbershopController extends Controller
     public function destroy($id)
     {
         $barbershop = Barbershop::findOrFail($id);
-        // Optional: Delete user too? For now just delete shop.
+        if ($barbershop->foto) {
+            Storage::disk('public')->delete($barbershop->foto);
+        }
         $barbershop->delete();
         return response()->json(['message' => 'Barbershop deleted']);
     }

@@ -185,13 +185,15 @@ export default function ManageUsers() {
                     </select>
 
                     <select
-                        className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:outline-none text-white text-sm"
+                        className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:outline-none text-white text-sm max-w-[200px]"
                         value={userFilters.barbershop_id}
                         onChange={(e) => setUserFilters({ ...userFilters, barbershop_id: e.target.value, page: 1 })}
                     >
                         <option value="all">All Barbershops</option>
                         {barbershops.map(s => (
-                            <option key={s.id} value={s.id}>{s.nama}</option>
+                            <option key={s.id} value={s.id}>
+                                {s.nama.length > 20 ? s.nama.substring(0, 20) + '...' : s.nama}
+                            </option>
                         ))}
                     </select>
 
@@ -236,7 +238,7 @@ export default function ManageUsers() {
                                     <td className="p-4 text-slate-400">
                                         {u.created_at ? formatDate(u.created_at) : <span className="text-slate-600">-</span>}
                                     </td>
-                                    <td className="p-4 font-medium">{u.name}</td>
+                                    <td className="p-4 font-medium max-w-[200px] truncate" title={u.name}>{u.name}</td>
                                     <td className="p-4">
                                         {u.role === 'admin_barbershop' ? (
                                             <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-900/30 text-purple-400 border border-purple-700/50 flex items-center gap-1 w-fit">
@@ -248,11 +250,13 @@ export default function ManageUsers() {
                                             </span>
                                         )}
                                     </td>
-                                    <td className="p-4 text-slate-400">{u.email}</td>
+                                    <td className="p-4 text-slate-400 max-w-[200px] truncate" title={u.email}>{u.email}</td>
                                     <td className="p-4 text-slate-400">{u.phone_number || '-'}</td>
                                     <td className="p-4">
                                         {u.role === 'admin_barbershop' ? (
-                                            <span className="text-white font-medium">{u.barbershop?.nama || <span className="text-slate-600">-</span>}</span>
+                                            <div className="text-white font-medium max-w-[200px] truncate" title={u.barbershop?.nama}>
+                                                {u.barbershop?.nama || <span className="text-slate-600">-</span>}
+                                            </div>
                                         ) : (
                                             <span className="text-slate-600">-</span>
                                         )}

@@ -94,7 +94,7 @@ export default function AdminDashboard() {
                 end_date: reservationFilters.end_date,
                 search: reservationFilters.search
             });
-            
+
             if (reservationFilters.status !== 'all') {
                 params.append('status', reservationFilters.status);
             }
@@ -138,15 +138,42 @@ export default function AdminDashboard() {
 
     const updateShop = async (e) => {
         e.preventDefault();
+
+        const formData = new FormData();
+        formData.append('_method', 'PUT');
+        formData.append('nama', shopForm.nama);
+        formData.append('alamat', shopForm.alamat);
+        formData.append('jam_buka', shopForm.jam_buka);
+        formData.append('jam_tutup', shopForm.jam_tutup);
+
+        if (shopForm.foto instanceof File) {
+            formData.append('foto', shopForm.foto);
+        }
+
+        if (shopForm.delete_foto) {
+            formData.append('delete_foto', '1');
+        }
+
         toast.promise(
-            api.put('/admin/barbershop', shopForm).then(({ data }) => {
+            api.post('/admin/barbershop', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            }).then(({ data }) => {
                 setShop(data);
+                // Update local form state to match response
+                setShopForm(prev => ({
+                    ...prev,
+                    foto: data.foto,
+                    delete_foto: false,
+                    image_url: null // Reset local preview
+                }));
                 setIsEditingShop(false);
             }),
             {
                 loading: 'Updating shop details...',
                 success: 'Shop details updated!',
-                error: 'Failed to update shop'
+                error: (err) => {
+                    return err.response?.data?.message || 'Failed to update shop';
+                }
             }
         );
     };
@@ -271,7 +298,7 @@ export default function AdminDashboard() {
 
     const confirmPayment = () => {
         if (!paymentReservation) return;
-        
+
         toast.promise(
             api.put(`/admin/reservasi/${paymentReservation.id}`, { status: 'selesai' }).then(() => {
                 fetchReservations();
@@ -390,23 +417,99 @@ export default function AdminDashboard() {
                                         <input type="time" className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white" value={shopForm.jam_tutup || ''} onChange={e => setShopForm({ ...shopForm, jam_tutup: e.target.value })} />
                                     </div>
                                 </div>
+
+                                <div className="border-t border-slate-700 pt-4">
+                                    <label className="block text-sm font-medium mb-2">Shop Image</label>
+
+                                    {(shopForm.foto || shopForm.image_url) && !shopForm.delete_foto && (
+                                        <div className="mb-3 relative inline-block">
+                                            <div className="w-full h-48 rounded-lg overflow-hidden border border-slate-600">
+                                                <img
+                                                    src={shopForm.image_url || (typeof shopForm.foto === 'string' ? shopForm.foto : null) || `http://localhost:8000/storage/${shopForm.foto}`}
+                                                    className="w-full h-full object-cover"
+                                                    alt="Shop Preview"
+                                                    onError={(e) => {
+                                                        // Fallback attempt if simple path
+                                                        if (!e.target.src.includes('storage') && typeof shopForm.foto === 'string') {
+                                                            e.target.src = `http://localhost:8000/storage/${shopForm.foto}`;
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShopForm(prev => ({ ...prev, delete_foto: true }))}
+                                                className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 shadow-lg"
+                                                title="Remove Image"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {shopForm.delete_foto && (
+                                        <div className="mb-3 p-3 bg-red-900/20 border border-red-900/50 rounded-lg flex items-center justify-between">
+                                            <div className="text-red-400 text-sm flex items-center gap-2">
+                                                <Trash2 className="h-4 w-4" /> Image will be deleted upon save
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShopForm(prev => ({ ...prev, delete_foto: false }))}
+                                                className="text-sm text-blue-400 hover:text-blue-300 hover:underline cursor-pointer"
+                                            >
+                                                Undo
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                setShopForm({
+                                                    ...shopForm,
+                                                    foto: file,
+                                                    image_url: URL.createObjectURL(file), // Local preview
+                                                    delete_foto: false // Reset delete flag if uploading new
+                                                });
+                                            }
+                                        }}
+                                    />
+                                </div>
+
                                 <button type="submit" className="w-full py-2 bg-green-600 hover:bg-green-700 rounded-lg flex items-center justify-center gap-2">
                                     <Save className="h-4 w-4" /> Save Changes
                                 </button>
                             </form>
                         ) : (
-                            <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
-                                <div>
-                                    <div className="text-sm text-slate-400">Name</div>
-                                    <div className="font-medium text-lg">{shop?.nama || 'N/A'}</div>
-                                </div>
-                                <div>
-                                    <div className="text-sm text-slate-400">Address</div>
-                                    <div className="font-medium">{shop?.alamat || 'N/A'}</div>
-                                </div>
-                                <div>
-                                    <div className="text-sm text-slate-400">Hours</div>
-                                    <div className="font-medium">{shop?.jam_buka} - {shop?.jam_tutup}</div>
+                            <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-6">
+                                {/* Image Display */}
+                                {shop?.foto && (
+                                    <div className="w-full h-64 rounded-xl overflow-hidden mb-6">
+                                        <img
+                                            src={shop.foto.startsWith('http') ? shop.foto : `http://localhost:8000/storage/${shop.foto}`}
+                                            alt={shop.nama}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <div className="text-sm text-slate-400">Name</div>
+                                        <div className="font-medium text-lg">{shop?.nama || 'N/A'}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-sm text-slate-400">Address</div>
+                                        <div className="font-medium">{shop?.alamat || 'N/A'}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-sm text-slate-400">Hours</div>
+                                        <div className="font-medium">{shop?.jam_buka} - {shop?.jam_tutup}</div>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -467,48 +570,48 @@ export default function AdminDashboard() {
                         </div>
                     </div>
                 )}
-                
+
                 {activeTab === 'reservations' && (
                     <div>
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                             <h2 className="text-2xl font-bold">Manage Reservations</h2>
-                            
+
                             <div className="flex flex-wrap gap-3 items-center w-full md:w-auto">
                                 <div className="relative flex-1 md:w-64">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-                                    <input 
-                                        type="text" 
-                                        placeholder="Search customer..." 
+                                    <input
+                                        type="text"
+                                        placeholder="Search customer..."
                                         className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                         value={reservationFilters.search}
-                                        onChange={(e) => setReservationFilters({...reservationFilters, search: e.target.value, page: 1})} 
+                                        onChange={(e) => setReservationFilters({ ...reservationFilters, search: e.target.value, page: 1 })}
                                     />
                                 </div>
                                 <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
                                     <Calendar className="h-4 w-4 text-slate-400" />
-                                    <input 
-                                        type="date" 
+                                    <input
+                                        type="date"
                                         className="bg-transparent border-none focus:outline-none text-sm text-white"
                                         value={reservationFilters.start_date}
-                                        onChange={(e) => setReservationFilters({...reservationFilters, start_date: e.target.value, page: 1})}
+                                        onChange={(e) => setReservationFilters({ ...reservationFilters, start_date: e.target.value, page: 1 })}
                                     />
                                 </div>
                                 <span className="text-slate-400 self-center">to</span>
                                 <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
                                     <Calendar className="h-4 w-4 text-slate-400" />
-                                    <input 
-                                        type="date" 
+                                    <input
+                                        type="date"
                                         className="bg-transparent border-none focus:outline-none text-sm text-white"
                                         value={reservationFilters.end_date}
-                                        onChange={(e) => setReservationFilters({...reservationFilters, end_date: e.target.value, page: 1})}
+                                        onChange={(e) => setReservationFilters({ ...reservationFilters, end_date: e.target.value, page: 1 })}
                                     />
                                 </div>
                                 <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
                                     <Filter className="h-4 w-4 text-slate-400" />
-                                    <select 
+                                    <select
                                         className="bg-transparent border-none focus:outline-none text-sm text-white"
                                         value={reservationFilters.status}
-                                        onChange={(e) => setReservationFilters({...reservationFilters, status: e.target.value, page: 1})}
+                                        onChange={(e) => setReservationFilters({ ...reservationFilters, status: e.target.value, page: 1 })}
                                     >
                                         <option value="all">All Status</option>
                                         <option value="menunggu">Menunggu</option>
@@ -551,12 +654,11 @@ export default function AdminDashboard() {
                                                 </td>
                                                 <td className="p-4 font-medium">{res.tukang_cukur?.nama}</td>
                                                 <td className="p-4">
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
-                                                        res.status === 'menunggu' ? 'bg-yellow-900/30 text-yellow-400 border-yellow-700/50' :
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${res.status === 'menunggu' ? 'bg-yellow-900/30 text-yellow-400 border-yellow-700/50' :
                                                         res.status === 'dikonfirmasi' ? 'bg-green-900/30 text-green-400 border-green-700/50' :
-                                                        res.status === 'selesai' ? 'bg-blue-900/30 text-blue-400 border-blue-700/50' :
-                                                        'bg-red-900/30 text-red-400 border-red-700/50'
-                                                    }`}>
+                                                            res.status === 'selesai' ? 'bg-blue-900/30 text-blue-400 border-blue-700/50' :
+                                                                'bg-red-900/30 text-red-400 border-red-700/50'
+                                                        }`}>
                                                         {res.status.charAt(0).toUpperCase() + res.status.slice(1)}
                                                     </span>
                                                 </td>
@@ -594,13 +696,13 @@ export default function AdminDashboard() {
                                     </tbody>
                                 </table>
                             </div>
-                            
+
                             <div className="p-4 border-t border-slate-700 flex items-center justify-between">
                                 <div className="text-sm text-slate-400">
                                     Showing {reservationMeta.from || 0} to {reservationMeta.to || 0} of {reservationMeta.total} entries
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <button 
+                                    <button
                                         onClick={() => setReservationFilters(prev => ({ ...prev, page: prev.page - 1 }))}
                                         disabled={reservationMeta.current_page === 1}
                                         className="p-2 rounded bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -608,7 +710,7 @@ export default function AdminDashboard() {
                                         <ChevronLeft className="h-4 w-4" />
                                     </button>
                                     <span className="text-sm font-medium px-2">Page {reservationMeta.current_page} of {reservationMeta.last_page}</span>
-                                    <button 
+                                    <button
                                         onClick={() => setReservationFilters(prev => ({ ...prev, page: prev.page + 1 }))}
                                         disabled={reservationMeta.current_page === reservationMeta.last_page}
                                         className="p-2 rounded bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -628,21 +730,21 @@ export default function AdminDashboard() {
                             <div className="flex gap-3 items-center">
                                 <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
                                     <Calendar className="h-4 w-4 text-slate-400" />
-                                    <input 
-                                        type="date" 
+                                    <input
+                                        type="date"
                                         className="bg-transparent border-none focus:outline-none text-sm text-white"
                                         value={revenueFilters.start_date}
-                                        onChange={(e) => setRevenueFilters({...revenueFilters, start_date: e.target.value})}
+                                        onChange={(e) => setRevenueFilters({ ...revenueFilters, start_date: e.target.value })}
                                     />
                                 </div>
                                 <span className="text-slate-400">to</span>
                                 <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
                                     <Calendar className="h-4 w-4 text-slate-400" />
-                                    <input 
-                                        type="date" 
+                                    <input
+                                        type="date"
                                         className="bg-transparent border-none focus:outline-none text-sm text-white"
                                         value={revenueFilters.end_date}
-                                        onChange={(e) => setRevenueFilters({...revenueFilters, end_date: e.target.value})}
+                                        onChange={(e) => setRevenueFilters({ ...revenueFilters, end_date: e.target.value })}
                                     />
                                 </div>
                             </div>
@@ -650,7 +752,7 @@ export default function AdminDashboard() {
 
                         {/* Summary Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <motion.div 
+                            <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className="bg-gradient-to-br from-green-900/40 to-green-800/20 border border-green-700/50 rounded-xl p-6"
@@ -666,7 +768,7 @@ export default function AdminDashboard() {
                                 </div>
                             </motion.div>
 
-                            <motion.div 
+                            <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.1 }}
@@ -684,7 +786,7 @@ export default function AdminDashboard() {
                                 <div className="text-xs text-slate-500 mt-1">Reservations</div>
                             </motion.div>
 
-                            <motion.div 
+                            <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.2 }}
@@ -697,7 +799,7 @@ export default function AdminDashboard() {
                                     <h3 className="text-sm font-medium text-slate-400">Average/Booking</h3>
                                 </div>
                                 <div className="text-3xl font-bold text-purple-400">
-                                    Rp {Number(revenueData.total_completed > 0 ? revenueData.total_revenue / revenueData.total_completed : 0).toLocaleString('id-ID', {maximumFractionDigits: 0})}
+                                    Rp {Number(revenueData.total_completed > 0 ? revenueData.total_revenue / revenueData.total_completed : 0).toLocaleString('id-ID', { maximumFractionDigits: 0 })}
                                 </div>
                             </motion.div>
                         </div>
@@ -711,7 +813,7 @@ export default function AdminDashboard() {
                                 </h3>
                                 <div className="space-y-3">
                                     {revenueData.by_service?.length > 0 ? revenueData.by_service.map((item, index) => (
-                                        <motion.div 
+                                        <motion.div
                                             key={index}
                                             initial={{ opacity: 0, x: -20 }}
                                             animate={{ opacity: 1, x: 0 }}
@@ -748,7 +850,7 @@ export default function AdminDashboard() {
                                 </h3>
                                 <div className="space-y-3">
                                     {revenueData.by_barber?.length > 0 ? revenueData.by_barber.map((item, index) => (
-                                        <motion.div 
+                                        <motion.div
                                             key={index}
                                             initial={{ opacity: 0, x: -20 }}
                                             animate={{ opacity: 1, x: 0 }}
@@ -804,7 +906,7 @@ export default function AdminDashboard() {
                                     </thead>
                                     <tbody className="divide-y divide-slate-700">
                                         {revenueData.recent_transactions?.length > 0 ? revenueData.recent_transactions.map((trans, index) => (
-                                            <motion.tr 
+                                            <motion.tr
                                                 key={index}
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
@@ -889,7 +991,7 @@ export default function AdminDashboard() {
                                 </div>
                                 <h2 className="text-xl font-bold text-white">Confirm Payment</h2>
                             </div>
-                            
+
                             <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700 space-y-3 mb-6">
                                 <div>
                                     <div className="text-sm text-slate-400">Service</div>

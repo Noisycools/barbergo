@@ -23,7 +23,10 @@ export default function SuperAdminDashboard() {
         email: '',
         password: '',
         foto: null,
-        nama_gambar: ''
+        delete_foto: false,
+        image_url: null, // For preview
+        create_user_email: '', // Separate for create vs edit display
+        create_user_password: ''
     });
 
     useEffect(() => {
@@ -49,19 +52,45 @@ export default function SuperAdminDashboard() {
     const handleShopSubmit = async (e) => {
         e.preventDefault();
         try {
+            const formData = new FormData();
+            formData.append('nama', shopFormData.nama);
+            formData.append('alamat', shopFormData.alamat);
+            formData.append('jam_buka', shopFormData.jam_buka);
+            formData.append('jam_tutup', shopFormData.jam_tutup);
+
             if (editShopId) {
-                await api.put(`/super-admin/barbershop/${editShopId}`, shopFormData, {
-                    isMultipart: true
+                // UPDATE
+                formData.append('_method', 'PUT'); // Method spoofing for Laravel
+                if (shopFormData.foto) {
+                    formData.append('foto', shopFormData.foto);
+                }
+                if (shopFormData.delete_foto) {
+                    formData.append('delete_foto', '1');
+                }
+                // Don't send user credentials on update usually, unless we want to allow updating them here. 
+                // Based on previous code, update didn't include user/email updates, only shop details.
+
+                await api.post(`/super-admin/barbershop/${editShopId}`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
                 });
             } else {
-                await api.post('/super-admin/barbershop', shopFormData, {
-                    isMultipart: true
+                // CREATE
+                formData.append('user_name', shopFormData.user_name);
+                formData.append('email', shopFormData.email);
+                formData.append('password', shopFormData.password);
+                if (shopFormData.foto) {
+                    formData.append('foto', shopFormData.foto);
+                }
+
+                await api.post('/super-admin/barbershop', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
                 });
             }
             await fetchBarbershops();
             setShowShopModal(false);
             resetShopForm();
         } catch (error) {
+            console.error(error);
             alert(error.response?.data?.message || 'Operation failed');
         }
     };
@@ -85,20 +114,37 @@ export default function SuperAdminDashboard() {
             jam_tutup: '21:00',
             user_name: '',
             email: '',
-            password: ''
+            password: '',
+            foto: null,
+            delete_foto: false,
+            image_url: null
         });
     };
 
     const openShopEdit = (shop) => {
         setEditShopId(shop.id);
+        console.log("Editing Shop:", shop);
+
+        let initialImageUrl = null;
+        if (shop.image_url) {
+            initialImageUrl = shop.image_url;
+        } else if (shop.foto) {
+            initialImageUrl = shop.foto.startsWith('http')
+                ? shop.foto
+                : `http://localhost:8000/storage/${shop.foto}`;
+        }
+
         setShopFormData({
             nama: shop.nama,
             alamat: shop.alamat,
             jam_buka: shop.jam_buka,
             jam_tutup: shop.jam_tutup,
-            user_name: shop.user?.name,
-            email: shop.user?.email,
-            password: ''
+            user_name: shop.user?.name, // Display only
+            email: shop.user?.email,   // Display only
+            password: '', // Usually empty on edit
+            foto: null,
+            delete_foto: false,
+            image_url: initialImageUrl
         });
         setShowShopModal(true);
     };
@@ -216,9 +262,60 @@ export default function SuperAdminDashboard() {
                                     <input type="time" className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2" required value={shopFormData.jam_tutup} onChange={e => setShopFormData({ ...shopFormData, jam_tutup: e.target.value })} />
                                 </div>
                             </div>
+
                             <div>
                                 <label className="block text-sm font-medium mb-1 text-slate-400">Image</label>
-                                <input type="file" className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2" onChange={e => setShopFormData({ ...shopFormData, foto: e.target.files[0], nama_gambar: e.target.value })} accept='image/*' />
+                                {shopFormData.image_url && !shopFormData.delete_foto && (
+                                    <div className="mb-2 relative inline-block">
+                                        <img
+                                            src={shopFormData.image_url}
+                                            alt="Shop"
+                                            className="h-32 w-full object-cover rounded-lg border border-slate-700"
+                                            onError={(e) => {
+                                                e.target.style.display = 'none'; // Hide broken images or maybe show placeholder
+                                                // Or try fallback if it was a relative path issue, but we handled that in openShopEdit
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShopFormData({ ...shopFormData, delete_foto: true })}
+                                            className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full hover:bg-red-700"
+                                            title="Delete Image"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                )}
+                                {shopFormData.delete_foto && (
+                                    <div className="mb-3 p-3 bg-red-900/20 border border-red-900/50 rounded-lg flex items-center justify-between">
+                                        <div className="text-red-400 text-sm flex items-center gap-2">
+                                            <Trash2 className="h-4 w-4" /> Image will be deleted upon save
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShopFormData({ ...shopFormData, delete_foto: false })}
+                                            className="text-sm text-blue-400 hover:text-blue-300 hover:underline cursor-pointer"
+                                        >
+                                            Undo
+                                        </button>
+                                    </div>
+                                )}
+                                <input
+                                    type="file"
+                                    className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700"
+                                    onChange={e => {
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                            setShopFormData({
+                                                ...shopFormData,
+                                                foto: file,
+                                                image_url: URL.createObjectURL(file),
+                                                delete_foto: false
+                                            });
+                                        }
+                                    }}
+                                    accept='image/*'
+                                />
                             </div>
 
                             {!editShopId && (

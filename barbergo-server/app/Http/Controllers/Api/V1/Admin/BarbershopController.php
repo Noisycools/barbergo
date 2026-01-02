@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Barbershop;
 use App\Models\Reservasi;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class BarbershopController extends Controller
@@ -34,18 +35,40 @@ class BarbershopController extends Controller
             'alamat' => 'required|string',
             'jam_buka' => 'required',
             'jam_tutup' => 'required',
+            'foto' => 'nullable|image|max:2048',
+            'delete_foto' => 'boolean'
         ]);
 
-        $barbershop->update($request->only([
+        $data = $request->only([
             'nama',
             'alamat',
             'jam_buka',
             'jam_tutup',
-            'nomor_telepon',
-            'foto'
-        ]));
+            'nomor_telepon'
+        ]);
 
-        return response()->json($barbershop);
+        // Handle File Delete
+        if ($request->boolean('delete_foto')) {
+            if ($barbershop->foto) {
+                Storage::disk('public')->delete($barbershop->foto);
+                $data['foto'] = null;
+            }
+        }
+
+        // Handle File Upload
+        if ($request->hasFile('foto')) {
+            // Delete old photo if exists
+            if ($barbershop->foto) {
+                Storage::disk('public')->delete($barbershop->foto);
+            }
+            $path = $request->file('foto')->store('barbershops', 'public');
+            $data['foto'] = $path;
+        }
+
+        $barbershop->update($data);
+
+        // Reload to get fresh data including potential new image path
+        return response()->json($barbershop->refresh());
     }
 
 
