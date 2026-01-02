@@ -7,6 +7,7 @@ import Dashboard from './pages/pelanggan/Dashboard';
 import BarbershopDetail from './pages/pelanggan/BarbershopDetail';
 import BookingForm from './pages/pelanggan/BookingForm';
 import History from './pages/pelanggan/History';
+import ProfileSettings from './pages/pelanggan/ProfileSettings';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard';
 
@@ -56,6 +57,11 @@ function App() {
           <Route path="/reservasi/riwayat" element={
             <ProtectedRoute allowedRoles={['pelanggan']}>
               <History />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute allowedRoles={['pelanggan']}>
+              <ProfileSettings />
             </ProtectedRoute>
           } />
 

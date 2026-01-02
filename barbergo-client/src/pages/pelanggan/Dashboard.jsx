@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../api';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Star, MapPin, Info } from 'lucide-react';
+import { Search, Star, MapPin, Info, LogOut, User, Settings, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import ScheduleModal from '../../components/ScheduleModal';
@@ -15,6 +15,7 @@ export default function Dashboard() {
   const [minRating, setMinRating] = useState(0);
   const [selectedShopForSchedule, setSelectedShopForSchedule] = useState(null);
   const [stats, setStats] = useState(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     fetchBarbershops();
@@ -86,13 +87,38 @@ export default function Dashboard() {
               My Reservations
             </Link>
             <div className="h-4 w-px bg-slate-700"></div>
-            <span className="text-slate-300">Hi, {user?.name}</span>
-            <button
-              onClick={logout}
-              className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors"
-            >
-              Sign out
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors focus:outline-none cursor-pointer"
+              >
+                <span>Hi, {user?.name}</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-slate-800 rounded-lg shadow-xl border border-slate-700 py-1 z-50">
+                  <Link
+                    to="/profile"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                    onClick={() => setIsDropdownOpen(false)}
+                  >
+                    <Settings className="h-4 w-4" />
+                    Profile Settings
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      logout();
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-slate-700 hover:text-red-300 transition-colors text-left cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>

@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\PromosiController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\SuperAdmin\UsersController;
 use App\Http\Controllers\Api\V1\SuperAdmin\PromoController;
+use App\Http\Controllers\Api\V1\ProfileController;
 
 Route::prefix('v1')->group(function () {
     // Auth
@@ -25,6 +26,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/user/profile', [AuthController::class, 'user']);
         Route::get('/user/dashboard/stats', [DashboardController::class, 'pelangganStats']);
+
+        // Profile
+        Route::put('/user/profile', [ProfileController::class, 'updateProfile']);
+        Route::put('/user/password', [ProfileController::class, 'changePassword']);
 
         // Pelanggan Actions
         Route::post('/reservasi', [ReservasiController::class, 'store']);
