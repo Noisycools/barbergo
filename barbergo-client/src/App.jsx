@@ -12,6 +12,22 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard';
 import LandingPage from './pages/public/LandingPage';
 
+// PublicRoute redirects authenticated users to their dashboard
+function PublicRoute({ children }) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-slate-100">Loading...</div>;
+  
+  // If user is authenticated, redirect to appropriate dashboard
+  if (user) {
+    if (user.role === 'admin_barbershop') return <Navigate to="/admin/dashboard" />;
+    if (user.role === 'super_admin') return <Navigate to="/superadmin/dashboard" />;
+    return <Navigate to="/dashboard" />; // Default for pelanggan
+  }
+
+  return children;
+}
+
 // ProtectedRoute checks if user is logged in
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, isLoading } = useAuth();
@@ -24,7 +40,7 @@ function ProtectedRoute({ children, allowedRoles }) {
     // Redirect based on role if unauthorized for this route
     if (user.role === 'admin_barbershop') return <Navigate to="/admin/dashboard" />;
     if (user.role === 'super_admin') return <Navigate to="/superadmin/dashboard" />;
-    return <Navigate to="/" />; // Default for pelanggan
+    return <Navigate to="/dashboard" />; // Default for pelanggan
   }
 
   return children;
@@ -36,12 +52,24 @@ function App() {
       <Toaster position="top-right" />
       <Router>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/" element={
+            <PublicRoute>
+              <LandingPage />
+            </PublicRoute>
+          } />
+          <Route path="/login" element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          } />
+          <Route path="/register" element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          } />
 
           {/* Pelanggan Routes */}
-          <Route path="/" element={
+          <Route path="/dashboard" element={
             <ProtectedRoute allowedRoles={['pelanggan']}>
               <Dashboard />
             </ProtectedRoute>

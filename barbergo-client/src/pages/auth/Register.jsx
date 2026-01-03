@@ -23,8 +23,9 @@ export default function Register() {
     setError('');
     setLoading(true);
     try {
-      await register(name, email, password, passwordConfirmation);
-      navigate('/');
+      const userData = await register(name, email, password, passwordConfirmation);
+      // Redirect to dashboard after registration (default is pelanggan)
+      navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
     } finally {

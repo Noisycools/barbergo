@@ -17,8 +17,15 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
-      navigate('/');
+      const userData = await login(email, password);
+      // Redirect based on user role
+      if (userData.role === 'admin_barbershop') {
+        navigate('/admin/dashboard');
+      } else if (userData.role === 'super_admin') {
+        navigate('/superadmin/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     } finally {
