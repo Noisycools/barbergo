@@ -10,6 +10,7 @@ import History from './pages/pelanggan/History';
 import ProfileSettings from './pages/pelanggan/ProfileSettings';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard';
+import LandingPage from './pages/public/LandingPage';
 
 // ProtectedRoute checks if user is logged in
 function ProtectedRoute({ children, allowedRoles }) {
@@ -35,6 +36,7 @@ function App() {
       <Toaster position="top-right" />
       <Router>
         <Routes>
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
