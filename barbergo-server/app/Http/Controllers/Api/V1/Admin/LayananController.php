@@ -17,26 +17,42 @@ class LayananController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'nama_layanan' => 'required|string',
-            'harga' => 'required|numeric',
-            'durasi_menit' => 'required|integer',
+        $validated = $request->validate([
+            'nama_layanan' => 'required|string|max:255',
+            'harga' => 'required|numeric|min:0',
+            'durasi_menit' => 'required|integer|min:1',
         ]);
 
         $barbershop = $request->user()->barbershop;
-        if (!$barbershop) return response()->json(['message' => 'No barbershop associated'], 403);
+        if (!$barbershop) {
+            return response()->json(['message' => 'No barbershop associated'], 403);
+        }
 
-        $layanan = $barbershop->layanans()->create($request->all());
+        // Sanitize untuk mencegah XSS
+        $validated['nama_layanan'] = strip_tags($validated['nama_layanan']);
+
+        $layanan = $barbershop->layanans()->create($validated);
 
         return response()->json($layanan, 201);
     }
 
     public function update(Request $request, $id)
     {
+        $validated = $request->validate([
+            'nama_layanan' => 'sometimes|required|string|max:255',
+            'harga' => 'sometimes|required|numeric|min:0',
+            'durasi_menit' => 'sometimes|required|integer|min:1',
+        ]);
+
         $barbershop = $request->user()->barbershop;
         $layanan = $barbershop->layanans()->findOrFail($id);
 
-        $layanan->update($request->all());
+        // Sanitize jika ada
+        if (isset($validated['nama_layanan'])) {
+            $validated['nama_layanan'] = strip_tags($validated['nama_layanan']);
+        }
+
+        $layanan->update($validated);
 
         return response()->json($layanan);
     }
@@ -49,6 +65,4 @@ class LayananController extends Controller
 
         return response()->json(['message' => 'Deleted']);
     }
-} {
-    //
 }

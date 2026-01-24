@@ -948,9 +948,9 @@ export default function AdminDashboard() {
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-slate-800 w-full max-w-md rounded-xl p-6 border border-slate-700">
                             <h2 className="text-xl font-bold mb-4">{editId ? 'Edit Service' : 'Add Service'}</h2>
                             <form onSubmit={saveService} className="space-y-4">
-                                <input className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2" placeholder="Service Name" required value={serviceForm.nama_layanan} onChange={e => setServiceForm({ ...serviceForm, nama_layanan: e.target.value })} />
-                                <input className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2" placeholder="Duration (mins)" type="number" required value={serviceForm.durasi_menit} onChange={e => setServiceForm({ ...serviceForm, durasi_menit: e.target.value })} />
-                                <input className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2" placeholder="Price (Rp)" type="number" required value={serviceForm.harga} onChange={e => setServiceForm({ ...serviceForm, harga: e.target.value })} />
+                                <input className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2" placeholder="Service Name" required maxLength={255} value={serviceForm.nama_layanan} onChange={e => setServiceForm({ ...serviceForm, nama_layanan: e.target.value })} />
+                                <input className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2" placeholder="Duration (mins)" type="number" required min="1" step="1" value={serviceForm.durasi_menit} onChange={e => setServiceForm({ ...serviceForm, durasi_menit: e.target.value })} />
+                                <input className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2" placeholder="Price (Rp)" type="number" required min="0" step="1" value={serviceForm.harga} onChange={e => setServiceForm({ ...serviceForm, harga: e.target.value })} />
                                 <div className="flex justify-end gap-3 pt-2">
                                     <button type="button" onClick={() => setShowServiceModal(false)} className="px-4 py-2 hover:bg-slate-700 rounded">Cancel</button>
                                     <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded">{editId ? 'Update' : 'Create'}</button>
